@@ -1,29 +1,37 @@
 <?php
-$username = "github";
+/**
+ * Super simple php-example to access instagram without any API key.
+ * Grab profile information and image urls from a JSON-object in the instagram webcode.
+ * 
+ * Author:  Dennis Paul
+ * Contact: dennis@blaumedia.com
+ */
 
-function cut_str($str, $left, $right) {
-	$front = explode($left, $str);
-	$returnVar = array();
-	
-	foreach($front as $value) {
-		if(strpos($value, $right) !== false) {
-			$end = explode($right, $value);
-			$returnVar[] = $end[0];
-		}
-	}
-	
-	foreach($returnVar as $key => $value) {
-		if(substr($value, 0, 9) == '<!DOCTYPE') unset($returnVar[$key]);
-	}
-	
-	$returnVar = array_values($returnVar);
-	return $returnVar;
+const USERNAME = 'github';
+const USER_AGENT = 'public-instagram-profile-parser; https://github.com/3lue/public-instagram-profile-parser';
+
+header('Content-Type: application/json');
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, 'https://www.instagram.com/' . USERNAME . '/');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+curl_setopt($ch, CURLOPT_USERAGENT, USER_AGENT);
+
+if (preg_match('/window\._sharedData = (.*);<\/script>/', curl_exec($ch), $data) === 1) {
+    $data = json_decode($data[1], 1);
+    if ($data !== null) {
+        echo json_encode($data['entry_data']['ProfilePage'][0]['graphql']['user']);
+    } else {
+        echo json_encode([
+            'success' => false
+        ]);
+    }
+} else {
+    echo json_encode([
+        'success' => false
+    ]);
 }
 
-$data = file_get_contents("https://www.instagram.com/" . $username);
-
-$data = cut_str($data, 'window._sharedData = ', ';</script>');
-$data = json_decode($data[0], 1);
-header('Content-Type: application/json');
-echo json_encode($data["entry_data"]["ProfilePage"][0]["user"]);
+curl_close($ch);
 ?>
